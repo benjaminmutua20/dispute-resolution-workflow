@@ -1,0 +1,100 @@
+{
+  "name": "Dispute Resolution",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "supabase-dispute",
+        "options": {}
+      },
+      "id": "1",
+      "name": "Webhook (Dispute Trigger)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://YOUR_SUPABASE_URL/rest/v1/disputes",
+        "options": {},
+        "queryParametersUi": {
+          "parameter": [
+            { "name": "id", "value": "={{$json[\"id\"]}}" }
+          ]
+        }
+      },
+      "id": "2",
+      "name": "Fetch Dispute",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [500, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            { "value1": "={{$json[\"type\"]}}", "operation": "equal", "value2": "refund" }
+          ]
+        }
+      },
+      "id": "3",
+      "name": "If Refund",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@yourapp.com",
+        "toEmail": "admin@yourapp.com",
+        "subject": "New Dispute Assigned",
+        "text": "Dispute {{$json[\"id\"]}} requires admin action."
+      },
+      "id": "4",
+      "name": "Assign Admin",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [1000, 200]
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@yourapp.com",
+        "toEmail": "={{$json[\"customer_email\"]}}",
+        "subject": "Your dispute is being reviewed",
+        "text": "We have received your dispute and assigned it to an admin."
+      },
+      "id": "5",
+      "name": "Notify Customer",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [1000, 300]
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@yourapp.com",
+        "toEmail": "={{$json[\"provider_email\"]}}",
+        "subject": "A dispute has been raised",
+        "text": "Customer dispute requires your response."
+      },
+      "id": "6",
+      "name": "Notify Provider",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 1,
+      "position": [1000, 400]
+    }
+  ],
+  "connections": {
+    "Webhook (Dispute Trigger)": {
+      "main": [[{ "node": "Fetch Dispute", "type": "main", "index": 0 }]]
+    },
+    "Fetch Dispute": {
+      "main": [[{ "node": "If Refund", "type": "main", "index": 0 }]]
+    },
+    "If Refund": {
+      "main": [
+        { "node": "Assign Admin", "type": "main", "index": 0 },
+        { "node": "Notify Customer", "type": "main", "index": 0 },
+        { "node": "Notify Provider", "type": "main", "index": 0 }
+      ]
+    }
+  }
+}
